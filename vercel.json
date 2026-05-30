@@ -4,6 +4,5 @@
   "env": {
     "PYTHON_VERSION": "3.11"
   },
-  "framework": "django",
-  "wsgiApplication": "gym_booking/wsgi.py"
+  "framework": "django"
 }
