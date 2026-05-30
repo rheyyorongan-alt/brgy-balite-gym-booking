@@ -1,0 +1,260 @@
+{% extends "core/base.html" %}
+{% load static %}
+
+{% block title %}{{ form_title }} – Barangay Gym Booking{% endblock %}
+{% block page_title %}{{ form_title }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-7 col-md-9">
+
+        <!-- Breadcrumb -->
+        <nav class="mb-3" style="font-size:.82rem;">
+            <a href="{% url 'booking_list' %}" style="color:#1a56db;text-decoration:none;">
+                <i class="bi bi-arrow-left me-1"></i>Back to Bookings
+            </a>
+        </nav>
+
+        <div class="card-modern">
+            <div class="card-header d-flex align-items-center gap-2">
+                <i class="bi bi-{% if is_edit %}pencil-square{% else %}plus-circle{% endif %} text-primary"></i>
+                {{ form_title }}
+            </div>
+            <div class="card-body p-4">
+                <form method="post" novalidate id="bookingForm">
+                    {% csrf_token %}
+
+                    <!-- Display Form Errors -->
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
+                        <i class="bi bi-exclamation-circle me-2"></i>
+                        <div>
+                            <strong>Booking Error!</strong>
+                            <div style="margin-top: 8px; font-size: 0.9rem;">
+                                {% for error in form.non_field_errors %}
+                                    <div style="margin-bottom: 8px; white-space: pre-wrap;">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                    {% endif %}
+
+                    <!-- ── Section: Event Information ── -->
+                    <div class="mb-4">
+                        <p class="mb-3" style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#94a3b8;border-bottom:1px solid #f1f5f9;padding-bottom:.5rem;">
+                            <i class="bi bi-calendar-event me-1"></i>Event Information
+                        </p>
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label class="form-label fw-semibold" style="font-size:.82rem;">
+                                    Event Name <span class="text-danger">*</span>
+                                </label>
+                                {{ form.event_name }}
+                                {% if form.event_name.errors %}
+                                <div class="text-danger mt-1" style="font-size:.78rem;">{{ form.event_name.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Booking Type Selection -->
+                            <div class="col-12">
+                                <label class="form-label fw-semibold" style="font-size:.82rem;">
+                                    Booking Type <span class="text-danger">*</span>
+                                </label>
+                                <div class="d-flex gap-4">
+                                    {% for value, label in form.booking_type.field.choices %}
+                                    <div class="form-check">
+                                        <input class="form-check-input booking-type-radio"
+                                               type="radio"
+                                               name="booking_type"
+                                               id="booking_type_{{ value }}"
+                                               value="{{ value }}"
+                                               {% if form.booking_type.value == value %}checked{% endif %}>
+                                        <label class="form-check-label" for="booking_type_{{ value }}">
+                                            {{ label }}
+                                        </label>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                {% if form.booking_type.errors %}
+                                <div class="text-danger mt-1" style="font-size:.78rem;">{{ form.booking_type.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="col-12">
+                                <!--
+                                    FIX #7 (bonus) — The label's inner HTML is managed by booking_form.js.
+                                    We give the text part its own <span id="date-label-text"> so JS only
+                                    swaps that text and never touches the red asterisk span.
+                                -->
+                                <label class="form-label fw-semibold" style="font-size:.82rem;" for="id_date_of_event">
+                                    <span id="date-label-text">
+                                        {# Show correct label on page load based on current booking type #}
+                                        {% if form.booking_type.value == 'MULTIPLE' %}
+                                            Start Date (Week Beginning – Monday)
+                                        {% else %}
+                                            Date of Event
+                                        {% endif %}
+                                    </span>
+                                    <span class="text-danger">*</span>
+                                </label>
+                                {{ form.date_of_event }}
+
+                                <!--
+                                    FIX #6 — The Monday hint is now hidden by default for Single Day.
+                                    booking_form.js will show/hide it via id="monday-hint".
+                                -->
+                                <small id="monday-hint" class="text-muted"
+                                       style="display:{% if form.booking_type.value == 'MULTIPLE' %}inline{% else %}none{% endif %};">
+                                    Pick any day in the week; system uses Monday of that week.
+                                </small>
+
+                                {% if form.date_of_event.errors %}
+                                <div class="text-danger mt-1" style="font-size:.78rem;">{{ form.date_of_event.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold" style="font-size:.82rem;">
+                                    Start Time <span class="text-danger">*</span>
+                                </label>
+                                {{ form.start_time }}
+                                {% if form.start_time.errors %}
+                                <div class="text-danger mt-1" style="font-size:.78rem;">{{ form.start_time.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold" style="font-size:.82rem;">
+                                    Duration (hours) <span class="text-danger">*</span>
+                                </label>
+                                {{ form.duration_hours }}
+                                {% if form.duration_hours.errors %}
+                                <div class="text-danger mt-1" style="font-size:.78rem;">{{ form.duration_hours.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ── Section: Days Selection (Multiple Days only) ── -->
+                    <div class="mb-4" id="days_container" style="display: {% if form.booking_type.value == 'MULTIPLE' %}block{% else %}none{% endif %};">
+                        <p class="mb-3" style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#94a3b8;border-bottom:1px solid #f1f5f9;padding-bottom:.5rem;">
+                            <i class="bi bi-calendar3 me-1"></i>Select Days to Book
+                        </p>
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <div style="background:#f8fafc;padding:1.5rem;border-radius:10px;border:1.5px solid #e2e8f0;">
+                                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem;">
+                                        {% for value, label in form.days_to_book.field.choices %}
+                                        <div class="form-check" style="display: flex; align-items: center; gap: 0.75rem;">
+                                            <input class="form-check-input"
+                                                   type="checkbox"
+                                                   name="days_to_book"
+                                                   id="id_days_{{ value }}"
+                                                   value="{{ value }}"
+                                                   style="width: 20px; height: 20px; cursor: pointer;"
+                                                   {# FIX #4 — Restore checked state after a failed POST / validation error #}
+                                                   {% if value|stringformat:"s" in form.days_to_book.value %}checked{% endif %}>
+                                            <label class="form-check-label" for="id_days_{{ value }}"
+                                                   style="cursor: pointer; margin-bottom: 0; font-weight: 500;">
+                                                {{ label }}
+                                            </label>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                {% if form.days_to_book.errors %}
+                                <div class="text-danger mt-2" style="font-size:.78rem;">{{ form.days_to_book.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ── Section: Customer Information ── -->
+                    <div class="mb-4">
+                        <p class="mb-3" style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#94a3b8;border-bottom:1px solid #f1f5f9;padding-bottom:.5rem;">
+                            <i class="bi bi-person me-1"></i>Customer Information
+                        </p>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold" style="font-size:.82rem;">
+                                    Customer Name <span class="text-danger">*</span>
+                                </label>
+                                {{ form.customer_name }}
+                                {% if form.customer_name.errors %}
+                                <div class="text-danger mt-1" style="font-size:.78rem;">{{ form.customer_name.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold" style="font-size:.82rem;">
+                                    Contact Number <span class="text-danger">*</span>
+                                </label>
+                                {{ form.contact_number }}
+                                {% if form.contact_number.errors %}
+                                <div class="text-danger mt-1" style="font-size:.78rem;">{{ form.contact_number.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ── Section: Payment ── -->
+                    <div class="mb-4">
+                        <p class="mb-3" style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#94a3b8;border-bottom:1px solid #f1f5f9;padding-bottom:.5rem;">
+                            <i class="bi bi-credit-card me-1"></i>Payment
+                        </p>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold" style="font-size:.82rem;">
+                                    Payment Status <span class="text-danger">*</span>
+                                </label>
+                                {{ form.payment_status }}
+                                {% if form.payment_status.errors %}
+                                <div class="text-danger mt-1" style="font-size:.78rem;">{{ form.payment_status.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ── Section: Notes ── -->
+                    <div class="mb-4">
+                        <p class="mb-3" style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#94a3b8;border-bottom:1px solid #f1f5f9;padding-bottom:.5rem;">
+                            <i class="bi bi-sticky me-1"></i>Additional Notes
+                        </p>
+                        {{ form.notes }}
+                        {% if form.notes.errors %}
+                        <div class="text-danger mt-1" style="font-size:.78rem;">{{ form.notes.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <!-- ── Buttons ── -->
+                    <div class="d-flex gap-2 pt-2">
+                        <button type="submit" class="btn-primary-modern flex-grow-1 text-center py-2" id="submitBtn">
+                            <i class="bi bi-{% if is_edit %}check-lg{% else %}plus-lg{% endif %} me-2"></i>{{ btn_label }}
+                        </button>
+                        <a href="{% url 'booking_list' %}" class="btn flex-grow-1 text-center py-2"
+                           style="border:1.5px solid #e2e8f0;border-radius:8px;color:#475569;font-size:.875rem;">
+                            <i class="bi bi-x-lg me-2"></i>Cancel
+                        </a>
+                    </div>
+
+                </form>
+            </div>
+        </div>
+
+        {% if is_edit and booking %}
+        <div class="mt-3 p-3 d-flex align-items-center gap-2" style="background:#f8fafc;border-radius:10px;border:1px solid #e2e8f0;">
+            <i class="bi bi-receipt text-muted"></i>
+            <small class="text-muted">
+                Receipt Number: <strong>{{ booking.receipt_number }}</strong>
+                &mdash; Created {{ booking.created_at|date:"M d, Y" }}
+            </small>
+        </div>
+        {% endif %}
+
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'core/js/booking_form.js' %}"></script>
+{% endblock %}

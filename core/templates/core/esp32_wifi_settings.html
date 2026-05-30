@@ -1,0 +1,414 @@
+{% extends "core/base.html" %}
+
+{% block title %}ESP32 Wi-Fi Settings – Barangay Gym Booking{% endblock %}
+
+{% block page_title %}Wi-Fi Settings{% endblock %}
+
+{% block content %}
+<style>
+    .dashboard-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: 8px;
+        margin-bottom: 2rem;
+    }
+
+    .dashboard-header h1 {
+        margin: 0 0 0.5rem 0;
+        font-size: 2rem;
+        font-weight: 700;
+    }
+
+    .status-badge {
+        display: inline-block;
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
+    }
+
+    .status-badge.online {
+        background-color: #28a745;
+    }
+
+    .status-badge.offline {
+        background-color: #dc3545;
+    }
+
+    .esp32-config-card {
+        background: white;
+        border-radius: 8px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        border-left: 4px solid #667eea;
+    }
+
+    .esp32-config-card h3 {
+        margin-top: 0;
+        margin-bottom: 1.5rem;
+        color: #333;
+    }
+
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 600;
+        color: #333;
+    }
+
+    .form-group input {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 1rem;
+    }
+
+    .form-group input:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .button-group {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+        margin-top: 2rem;
+    }
+
+    .button-group button {
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: 4px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .btn-primary {
+        background-color: #667eea;
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background-color: #5568d3;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    }
+
+    .btn-secondary {
+        background-color: #6c757d;
+        color: white;
+    }
+
+    .btn-secondary:hover {
+        background-color: #5a6268;
+    }
+
+    .status-info {
+        background: #f8f9fa;
+        padding: 1.5rem;
+        border-radius: 4px;
+        margin-top: 2rem;
+    }
+
+    .status-info-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.75rem 0;
+        border-bottom: 1px solid #e0e0e0;
+    }
+
+    .status-info-item:last-child {
+        border-bottom: none;
+    }
+
+    .status-info-item strong {
+        color: #333;
+    }
+
+    .status-info-item span {
+        color: #666;
+    }
+
+    .wifi-history-card {
+        background: white;
+        border-radius: 8px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .wifi-history-card h3 {
+        margin-top: 0;
+        margin-bottom: 1.5rem;
+        color: #333;
+    }
+
+    .wifi-entry {
+        background: #f8f9fa;
+        padding: 1rem;
+        border-radius: 4px;
+        margin-bottom: 1rem;
+        border-left: 3px solid #667eea;
+    }
+
+    .wifi-entry-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.5rem;
+    }
+
+    .wifi-entry-ssid {
+        font-weight: 600;
+        color: #333;
+        font-size: 1.1rem;
+    }
+
+    .wifi-entry-status {
+        font-size: 0.85rem;
+        padding: 0.25rem 0.75rem;
+        border-radius: 12px;
+        background-color: #e8f5e9;
+        color: #2e7d32;
+    }
+
+    .wifi-entry-meta {
+        color: #666;
+        font-size: 0.9rem;
+    }
+
+    .network-scan-section {
+        background: white;
+        border-radius: 8px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .network-scan-section h3 {
+        margin-top: 0;
+        margin-bottom: 1.5rem;
+        color: #333;
+    }
+
+    .network-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .network-table thead {
+        background-color: #f5f5f5;
+    }
+
+    .network-table th {
+        padding: 1rem;
+        text-align: left;
+        font-weight: 600;
+        color: #333;
+        border-bottom: 2px solid #e0e0e0;
+    }
+
+    .network-table td {
+        padding: 1rem;
+        border-bottom: 1px solid #e0e0e0;
+    }
+
+    .network-table tr:hover {
+        background-color: #f9f9f9;
+    }
+
+    .btn-use {
+        background-color: #667eea;
+        color: white;
+        padding: 0.5rem 1rem;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.9rem;
+    }
+
+    .btn-use:hover {
+        background-color: #5568d3;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 2rem;
+        color: #666;
+    }
+
+    .empty-state-icon {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
+
+    @media (max-width: 768px) {
+        .dashboard-header {
+            padding: 1.5rem;
+        }
+
+        .dashboard-header h1 {
+            font-size: 1.5rem;
+        }
+
+        .status-info-item {
+            flex-direction: column;
+        }
+    }
+</style>
+
+<!-- Dashboard Header -->
+<div class="dashboard-header">
+    <h1>🔌 Wi-Fi Settings</h1>
+    <p style="margin: 0.5rem 0 0 0; opacity: 0.9;">Manage ESP32 network connections and WiFi configurations</p>
+    <div style="margin-top: 1rem;">
+        <span class="status-badge {% if status_online %}online{% else %}offline{% endif %}">
+            {{ status_online|yesno:"🟢 Online,🔴 Offline" }}
+        </span>
+        <span style="margin-left: 1rem; opacity: 0.9;">{{ status_message }}</span>
+    </div>
+</div>
+
+<!-- Main Configuration Section -->
+<div class="esp32-config-card">
+    <h3>📡 ESP32 Configuration</h3>
+    <form method="post">
+        {% csrf_token %}
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+            <div class="form-group">
+                {{ form.esp32_ip.label_tag }}
+                {{ form.esp32_ip }}
+                <small style="color: #999; margin-top: 0.25rem; display: block;">Device IP Address</small>
+            </div>
+            <div class="form-group">
+                {{ form.esp32_port.label_tag }}
+                {{ form.esp32_port }}
+                <small style="color: #999; margin-top: 0.25rem; display: block;">Connection Port</small>
+            </div>
+            <div class="form-group" style="grid-column: 1 / -1;">
+                {{ form.esp32_auth_token.label_tag }}
+                {{ form.esp32_auth_token }}
+                <small style="color: #999; margin-top: 0.25rem; display: block;">Authentication Token</small>
+            </div>
+        </div>
+
+        <div style="border-top: 1px solid #e0e0e0; padding-top: 2rem; margin-top: 2rem;">
+            <h4 style="margin-top: 0; margin-bottom: 1.5rem; color: #333;">Wi-Fi Network Details</h4>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+                <div class="form-group">
+                    {{ form.esp32_wifi_ssid.label_tag }}
+                    {{ form.esp32_wifi_ssid }}
+                    <small style="color: #999; margin-top: 0.25rem; display: block;">Network Name</small>
+                </div>
+                <div class="form-group">
+                    {{ form.esp32_wifi_password.label_tag }}
+                    {{ form.esp32_wifi_password }}
+                    <small style="color: #999; margin-top: 0.25rem; display: block;">Network Password</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="button-group">
+            <button type="submit" name="save_settings" class="btn-primary">💾 Save Settings</button>
+            <button type="submit" name="connect_now" class="btn-primary">🔗 Save & Connect</button>
+            <a href="?refresh=1" class="btn-secondary" style="text-decoration: none; display: inline-flex; align-items: center;">🔄 Refresh Status</a>
+        </div>
+    </form>
+
+    <!-- Status Section -->
+    <div class="status-info">
+        <h4 style="margin-top: 0; margin-bottom: 1rem; color: #333;">📊 Device Status</h4>
+        <div class="status-info-item">
+            <strong>Current IP Address:</strong>
+            <span>{{ status_data.ip|default:config.esp32_ip|default:'Not set' }}</span>
+        </div>
+        <div class="status-info-item">
+            <strong>Connected Network:</strong>
+            <span>{{ status_data.ssid|default:'Not connected' }}</span>
+        </div>
+        <div class="status-info-item">
+            <strong>Saved Network SSID:</strong>
+            <span>{{ config.esp32_wifi_ssid|default:'Not configured' }}</span>
+        </div>
+    </div>
+</div>
+
+<!-- WiFi Network Scan Section -->
+<div class="network-scan-section">
+    <h3>🌐 Available 2.4GHz Networks</h3>
+    {% if available_networks %}
+        <div style="overflow-x: auto;">
+            <table class="network-table">
+                <thead>
+                    <tr>
+                        <th>Network Name (SSID)</th>
+                        <th>Signal Strength (RSSI)</th>
+                        <th>Security</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for network in available_networks %}
+                        <tr>
+                            <td><strong>{{ network.ssid }}</strong></td>
+                            <td>{{ network.rssi }} dBm</td>
+                            <td>{{ network.encryption|default:'Unknown' }}</td>
+                            <td>
+                                <button type="button" class="btn-use" onclick="fillSsid('{{ network.ssid|escapejs }}')">Select</button>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="empty-state">
+            <div class="empty-state-icon">📶</div>
+            <p>No 2.4GHz networks scanned yet.</p>
+            <p style="color: #999; font-size: 0.95rem;">Make sure your ESP32 is powered on and try refreshing to scan for available networks.</p>
+        </div>
+    {% endif %}
+</div>
+
+<!-- WiFi Connection History Section -->
+<div class="wifi-history-card">
+    <h3>📚 Wi-Fi Connection History</h3>
+    <div class="wifi-entry">
+        <div class="wifi-entry-header">
+            <span class="wifi-entry-ssid">{{ config.esp32_wifi_ssid|default:"Not configured" }}</span>
+            <span class="wifi-entry-status">{{ status_online|yesno:"Connected,Disconnected" }}</span>
+        </div>
+        <div class="wifi-entry-meta">
+            <p style="margin: 0;">IP Address: <strong>{{ status_data.ip|default:config.esp32_ip|default:'Not set' }}</strong></p>
+            <p style="margin: 0.5rem 0 0 0;">Port: <strong>{{ config.esp32_port|default:'Not set' }}</strong></p>
+        </div>
+    </div>
+    <p style="color: #999; font-size: 0.9rem; margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid #e0e0e0;">
+        💡 <strong>Tip:</strong> Your WiFi connections and ESP32 configurations are saved here. Update the form above to add new networks or change settings.
+    </p>
+</div>
+
+<script>
+function fillSsid(ssid) {
+    var field = document.getElementById('id_esp32_wifi_ssid');
+    if (field) {
+        field.value = ssid;
+        field.focus();
+        field.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+}
+</script>
+{% endblock %}

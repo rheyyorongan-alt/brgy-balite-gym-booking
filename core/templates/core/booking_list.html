@@ -1,0 +1,501 @@
+{% extends "core/base.html" %}
+
+{% block title %}Bookings – Barangay Gym Booking{% endblock %}
+{% block page_title %}Booking Management{% endblock %}
+
+{% block content %}
+
+<!-- ── Header ── -->
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+    <div>
+        <p class="text-muted mb-0" style="font-size:.85rem;">
+            Showing <strong>{{ page_obj.start_index }}–{{ page_obj.end_index }}</strong>
+            of <strong>{{ total_count }}</strong> booking{{ total_count|pluralize }}
+            {% if not status_filter and show_cancelled != '1' %}
+                <span class="ms-1" style="color:#1a56db;font-weight:600;">(Active only)</span>
+            {% endif %}
+        </p>
+    </div>
+    <a href="{% url 'add_booking' %}" class="btn-primary-modern">
+        <i class="bi bi-plus-lg me-1"></i>New Booking
+    </a>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     EXPORT SECTION
+     Export bookings to Excel or PDF filtered by date range.
+     Clicking Export opens a small dropdown with date inputs.
+══════════════════════════════════════════════════════════════ -->
+<div class="card-modern mb-4" style="border-left:4px solid #1a56db;">
+    <div class="card-body py-3 px-4">
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+
+            <!-- Label -->
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-download text-primary" style="font-size:1.1rem;"></i>
+                <div>
+                    <p class="mb-0 fw-semibold" style="font-size:.875rem;color:#0f172a;">Export Records</p>
+                    <small class="text-muted">Download bookings filtered by date range</small>
+                </div>
+            </div>
+
+            <!-- Date range + export buttons -->
+            <div class="d-flex flex-wrap align-items-end gap-2">
+                <div>
+                    <label class="form-label mb-1" style="font-size:.72rem;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.04em;">From</label>
+                    <input type="date" id="export_date_from"
+                           class="form-control form-control-modern"
+                           style="font-size:.85rem;padding:.4rem .75rem;width:155px;"
+                           value="{{ today|date:'Y-m-d'|slice:':8' }}01">
+                </div>
+                <div>
+                    <label class="form-label mb-1" style="font-size:.72rem;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.04em;">To</label>
+                    <input type="date" id="export_date_to"
+                           class="form-control form-control-modern"
+                           style="font-size:.85rem;padding:.4rem .75rem;width:155px;"
+                           value="{{ today|date:'Y-m-d' }}">
+                </div>
+
+                <!-- Excel button -->
+                <div>
+                    <label class="form-label mb-1" style="font-size:.72rem;color:transparent;">.</label>
+                    <button onclick="doExport('excel')"
+                        style="background:#16a34a;color:#fff;border:none;border-radius:8px;padding:.45rem 1rem;font-size:.85rem;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:.4rem;">
+                        <i class="bi bi-file-earmark-excel"></i> Excel
+                    </button>
+                </div>
+
+                <!-- PDF button -->
+                <div>
+                    <label class="form-label mb-1" style="font-size:.72rem;color:transparent;">.</label>
+                    <button onclick="doExport('pdf')"
+                        style="background:#dc2626;color:#fff;border:none;border-radius:8px;padding:.45rem 1rem;font-size:.85rem;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:.4rem;">
+                        <i class="bi bi-file-earmark-pdf"></i> PDF
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- ── Filters ── -->
+<div class="card-modern mb-4">
+    <div class="card-body py-3 px-4">
+        <form method="get" class="row g-2 align-items-end">
+            {% if show_cancelled == '1' %}
+            <input type="hidden" name="show_cancelled" value="1">
+            {% endif %}
+            <div class="col-sm-5">
+                <label class="form-label mb-1" style="font-size:.75rem;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.04em;">Search</label>
+                <div class="input-group">
+                    <span class="input-group-text" style="background:#f8fafc;border:1.5px solid #e2e8f0;border-right:none;border-radius:8px 0 0 8px;">
+                        <i class="bi bi-search" style="color:#94a3b8;"></i>
+                    </span>
+                    <input type="text" name="search" value="{{ search_query }}"
+                        placeholder="Name, event, receipt #..."
+                        class="form-control form-control-modern" style="border-left:none;border-radius:0 8px 8px 0;">
+                </div>
+            </div>
+            <div class="col-sm-2">
+                <label class="form-label mb-1" style="font-size:.75rem;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.04em;">Status</label>
+                <select name="status" class="form-select form-control-modern">
+                    <option value="">All Active</option>
+                    {% for val, label in booking_statuses %}
+                    <option value="{{ val }}" {% if status_filter == val %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-sm-2">
+                <label class="form-label mb-1" style="font-size:.75rem;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.04em;">Payment</label>
+                <select name="payment" class="form-select form-control-modern">
+                    <option value="">All</option>
+                    {% for val, label in payment_statuses %}
+                    <option value="{{ val }}" {% if payment_filter == val %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-sm-3 d-flex gap-2">
+                <button type="submit" class="btn-primary-modern flex-grow-1">
+                    <i class="bi bi-funnel me-1"></i>Filter
+                </button>
+                {% if search_query or status_filter or payment_filter or show_cancelled == '1' %}
+                <a href="{% url 'booking_list' %}" class="btn"
+                   style="border:1.5px solid #e2e8f0;border-radius:8px;color:#64748b;font-size:.85rem;padding:.45rem .75rem;"
+                   title="Clear all filters">
+                    <i class="bi bi-x-lg"></i>
+                </a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ── Table ── -->
+<div class="card-modern">
+    <div class="card-body p-0">
+        {% if show_cancelled == '1' %}
+        <form method="post" action="{% url 'bulk_delete_bookings' %}" id="bulkDeleteForm">
+            {% csrf_token %}
+        {% endif %}
+        <div class="table-responsive">
+            <table class="table table-modern mb-0">
+                <thead>
+                    <tr>
+                        {% if show_cancelled == '1' %}
+                        <th style="width:40px;text-align:center;">
+                            <input type="checkbox" id="select_all_cancelled_header" />
+                        </th>
+                        {% endif %}
+                        <th>#</th>
+                        <th>Receipt #</th>
+                        <th>Event / Customer</th>
+                        <th>Date &amp; Time</th>
+                        <th>Booking</th>
+                        <th>Payment</th>
+                        <th style="min-width:160px;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for booking in page_obj %}
+                    <tr class="{% if booking.is_cancelled %}cancelled-row{% endif %}">
+                        {% if show_cancelled == '1' %}
+                        <td style="text-align:center;">
+                            {% if booking.is_cancelled %}
+                            <input type="checkbox" name="selected_ids" value="{{ booking.id }}" class="cancelled-checkbox" />
+                            {% endif %}
+                        </td>
+                        {% endif %}
+                        <td style="color:#94a3b8;font-size:.78rem;">
+                            {{ page_obj.start_index|add:forloop.counter0 }}
+                        </td>
+                        <td>
+                            <code style="font-size:.78rem;background:#f1f5f9;padding:.2em .5em;border-radius:5px;">
+                                {{ booking.receipt_number }}
+                            </code>
+                        </td>
+                        <td>
+                            <p class="mb-0" style="font-size:.875rem;font-weight:600;">{{ booking.event_name }}</p>
+                            <small class="text-muted">
+                                <i class="bi bi-person me-1"></i>{{ booking.customer_name }}
+                            </small>
+                            {% if booking.is_cancelled and booking.cancellation_reason %}
+                            <div class="mt-1">
+                                <small class="text-danger" style="font-size:.72rem;">
+                                    <i class="bi bi-info-circle me-1"></i>{{ booking.cancellation_reason|truncatechars:55 }}
+                                </small>
+                            </div>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <p class="mb-0" style="font-size:.85rem;">{{ booking.date_of_event }}</p>
+                            <small class="text-muted">
+                                <i class="bi bi-clock me-1"></i>
+                                {{ booking.start_time|time:"H:i" }} &middot; {{ booking.duration_hours }}h
+                            </small>
+                        </td>
+                        <td>
+                            <span class="badge-status
+                                {% if booking.status == 'ACTIVE' %}badge-active
+                                {% elif booking.status == 'CANCELLED' %}badge-cancelled
+                                {% else %}badge-completed{% endif %}">
+                                {{ booking.get_status_display }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge-status
+                                {% if booking.payment_status == 'PAID' %}badge-paid
+                                {% elif booking.payment_status == 'PARTIAL' %}badge-partial
+                                {% else %}badge-unpaid{% endif %}">
+                                {{ booking.get_payment_status_display }}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="d-flex gap-1">
+                                {% if not booking.is_cancelled %}
+
+                                <!-- Preview Receipt -->
+                                <button type="button" title="Preview Receipt"
+                                    style="border:1.5px solid #d1fae5;border-radius:7px;font-size:.78rem;color:#065f46;padding:.3rem .5rem;background:#f0fdf4;cursor:pointer;"
+                                    onclick="showReceiptPreview(
+                                        '{{ booking.receipt_number }}',
+                                        '{{ booking.created_at|date:"M d, Y  g:i A" }}',
+                                        '{{ booking.event_name|escapejs }}',
+                                        '{{ booking.customer_name|escapejs }}',
+                                        '{{ booking.contact_number|escapejs }}',
+                                        '{{ booking.date_display_with_day|escapejs }}',
+                                        '{{ booking.start_time|time:"g:i A" }} ({{ booking.duration_hours }} hr{% if booking.duration_hours != 1 %}s{% endif %})',
+                                        '{{ booking.get_payment_status_display }}',
+                                        '{% url "print_receipt" booking.id %}'
+                                    )">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+
+                                <!-- Print -->
+                                <a href="{% url 'print_receipt' booking.id %}" title="Print Receipt"
+                                   style="border:1.5px solid #e2e8f0;border-radius:7px;font-size:.78rem;color:#475569;padding:.3rem .5rem;text-decoration:none;">
+                                    <i class="bi bi-printer"></i>
+                                </a>
+
+                                {% if booking.booking_type != 'MULTIPLE' %}
+                                <!-- Edit -->
+                                <a href="{% url 'edit_booking' booking.id %}" title="Edit"
+                                   style="border:1.5px solid #bfdbfe;border-radius:7px;font-size:.78rem;color:#1d4ed8;padding:.3rem .5rem;text-decoration:none;">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                {% endif %}
+
+                                <!-- Cancel -->
+                                <a href="{% url 'cancel_booking' booking.id %}" title="Cancel Booking"
+                                   style="border:1.5px solid #fecaca;border-radius:7px;font-size:.78rem;color:#b91c1c;padding:.3rem .5rem;text-decoration:none;"
+                                   onclick="return confirm('Cancel booking for \'{{ booking.event_name }}\'?\nYou will provide a reason on the next page.')">
+                                    <i class="bi bi-x-lg"></i>
+                                </a>
+
+                                {% else %}
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="text-muted" style="font-size:.75rem;">
+                                        <i class="bi bi-slash-circle me-1"></i>Cancelled
+                                        {% if booking.cancelled_at %}
+                                        <br><small>{{ booking.cancelled_at|date:"M d, Y" }}</small>
+                                        {% endif %}
+                                    </span>
+
+                                    <!-- Delete cancelled booking (opens confirmation) -->
+                                    <a href="{% url 'delete_booking' booking.id %}" title="Delete Cancelled Booking"
+                                       style="border:1.5px solid #fee2e2;border-radius:7px;font-size:.78rem;color:#b91c1c;padding:.3rem .5rem;text-decoration:none;"
+                                       onclick="return confirm('Permanently delete this cancelled booking? This cannot be undone.')">
+                                        <i class="bi bi-trash"></i>
+                                    </a>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="text-center py-5">
+                            <i class="bi bi-inbox" style="font-size:2.5rem;color:#cbd5e1;"></i>
+                            <p class="text-muted mt-2 mb-0">No bookings found.</p>
+                            {% if search_query or status_filter or payment_filter %}
+                            <a href="{% url 'booking_list' %}" class="btn-primary-modern mt-3 d-inline-block">Clear Filters</a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {% if show_cancelled == '1' %}
+    <div class="p-3" style="border-top:1px solid #f1f5f9;">
+            <div class="d-flex gap-2">
+                <button type="submit" form="bulkDeleteForm" class="btn btn-danger" onclick="return confirm('Permanently delete selected cancelled bookings? This cannot be undone.')">
+                    <i class="bi bi-trash me-1"></i> Delete Selected
+                </button>
+                <small class="text-muted">Select individual cancelled rows using the checkboxes on the left.</small>
+            </div>
+    </div>
+    </form>
+    {% endif %}
+
+    <!-- ── Pagination ── -->
+    {% if page_obj.has_other_pages %}
+    <div class="d-flex align-items-center justify-content-between px-4 py-3" style="border-top:1px solid #f1f5f9;">
+        <small class="text-muted">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</small>
+        <nav>
+            <ul class="pagination mb-0">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page=1&search={{ search_query }}&status={{ status_filter }}&payment={{ payment_filter }}&show_cancelled={{ show_cancelled }}">
+                        <i class="bi bi-chevron-double-left"></i>
+                    </a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}&search={{ search_query }}&status={{ status_filter }}&payment={{ payment_filter }}&show_cancelled={{ show_cancelled }}">
+                        <i class="bi bi-chevron-left"></i>
+                    </a>
+                </li>
+                {% endif %}
+                {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                    <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                    {% elif num > page_obj.number|add:"-3" and num < page_obj.number|add:"3" %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ num }}&search={{ search_query }}&status={{ status_filter }}&payment={{ payment_filter }}&show_cancelled={{ show_cancelled }}">{{ num }}</a>
+                    </li>
+                    {% endif %}
+                {% endfor %}
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}&search={{ search_query }}&status={{ status_filter }}&payment={{ payment_filter }}&show_cancelled={{ show_cancelled }}">
+                        <i class="bi bi-chevron-right"></i>
+                    </a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}&search={{ search_query }}&status={{ status_filter }}&payment={{ payment_filter }}&show_cancelled={{ show_cancelled }}">
+                        <i class="bi bi-chevron-double-right"></i>
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+
+<!-- ── Cancelled History Banner ── -->
+{% if cancelled_count > 0 and show_cancelled != '1' and status_filter != 'CANCELLED' %}
+<div class="mt-3 p-3 d-flex align-items-center justify-content-between gap-3"
+     style="background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:12px;">
+    <div class="d-flex align-items-center gap-2">
+        <i class="bi bi-archive text-muted"></i>
+        <small class="text-muted">
+            <strong>{{ cancelled_count }}</strong>
+            cancelled booking{{ cancelled_count|pluralize }} hidden from this list.
+        </small>
+    </div>
+    <a href="?show_cancelled=1&search={{ search_query }}&payment={{ payment_filter }}"
+       style="font-size:.8rem;color:#475569;border:1.5px solid #e2e8f0;border-radius:8px;padding:.3rem .75rem;text-decoration:none;white-space:nowrap;">
+        <i class="bi bi-eye me-1"></i>Show Cancelled History
+    </a>
+</div>
+{% endif %}
+
+{% if show_cancelled == '1' %}
+<div class="mt-3 p-3 d-flex align-items-center justify-content-between gap-3"
+     style="background:#fff7ed;border:1.5px solid #fed7aa;border-radius:12px;">
+    <div class="d-flex align-items-center gap-2">
+        <i class="bi bi-eye text-warning"></i>
+        <small style="color:#92400e;">Showing <strong>cancelled bookings</strong> as history.</small>
+    </div>
+    <a href="{% url 'booking_list' %}{% if search_query %}?search={{ search_query }}{% endif %}"
+       style="font-size:.8rem;color:#92400e;border:1.5px solid #fed7aa;border-radius:8px;padding:.3rem .75rem;text-decoration:none;white-space:nowrap;">
+        <i class="bi bi-eye-slash me-1"></i>Hide Cancelled
+    </a>
+</div>
+{% endif %}
+
+
+<!-- ── Receipt Preview Modal ── -->
+<div class="modal fade" id="receiptPreviewModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:340px;">
+        <div class="modal-content" style="border:none;border-radius:4px;background:transparent;box-shadow:none;">
+            <div id="receiptPaper" style="background:#fff;font-family:'Courier New',Courier,monospace;font-size:12px;color:#000;width:100%;padding:16px 20px 8px 20px;box-shadow:0 4px 24px rgba(0,0,0,0.18);position:relative;border-radius:2px;">
+                <div style="position:absolute;top:-10px;left:0;right:0;height:12px;background:repeating-linear-gradient(90deg,transparent 0px,transparent 8px,#fff 8px,#fff 10px);"></div>
+                <div style="text-align:center;margin-bottom:8px;">
+                    <div style="font-size:14px;font-weight:bold;letter-spacing:1px;">BRGY. BALITE GYM COURT</div>
+                    <div style="font-size:10px;margin-top:2px;">Brgy. Balite, San Francisco</div>
+                    <div style="font-size:10px;">(Anao-aon), Surigao Del Norte</div>
+                </div>
+                <div style="border-top:1px dashed #000;margin:8px 0;"></div>
+                <div style="text-align:center;font-weight:bold;font-size:13px;letter-spacing:2px;">OFFICIAL RECEIPT</div>
+                <div style="border-top:1px dashed #000;margin:8px 0;"></div>
+                <div style="margin-bottom:6px;">
+                    <div><span style="display:inline-block;width:80px;">Receipt#</span>: <strong id="pr_receipt_number"></strong></div>
+                    <div><span style="display:inline-block;width:80px;">Issued</span>: <span id="pr_date_issued"></span></div>
+                </div>
+                <div style="border-top:1px dashed #000;margin:8px 0;"></div>
+                <div style="margin-bottom:6px;">
+                    <div><span style="display:inline-block;width:80px;">Event</span>: <span id="pr_event_name"></span></div>
+                    <div><span style="display:inline-block;width:80px;">Customer</span>: <span id="pr_customer_name"></span></div>
+                    <div><span style="display:inline-block;width:80px;">Contact</span>: <span id="pr_contact_number"></span></div>
+                    <div><span style="display:inline-block;width:80px;">Date</span>: <span id="pr_date_of_event"></span></div>
+                    <div><span style="display:inline-block;width:80px;">Time</span>: <span id="pr_time_info"></span></div>
+                </div>
+                <div style="border-top:1px dashed #000;margin:8px 0;"></div>
+                <div style="margin-bottom:6px;">
+                    <div><span style="display:inline-block;width:80px;font-weight:bold;">Payment</span>: <strong id="pr_payment_status"></strong></div>
+                </div>
+                <div style="border-top:1px dashed #000;margin:8px 0;"></div>
+                <div style="text-align:center;font-size:11px;margin-top:6px;">Thank you for your booking!</div>
+                <div style="margin-top:16px;height:12px;background:repeating-linear-gradient(90deg,#f1f5f9 0px,#f1f5f9 8px,transparent 8px,transparent 10px);"></div>
+            </div>
+            <div class="d-flex gap-2 mt-3 px-1">
+                <button type="button" class="btn flex-grow-1 fw-semibold"
+                    style="background:#1a56db;color:#fff;border:none;border-radius:8px;font-size:.85rem;padding:.55rem;"
+                    id="previewPrintBtn">
+                    <i class="bi bi-printer me-1"></i>Print Now
+                </button>
+                <button type="button" class="btn flex-grow-1"
+                    style="border:1.5px solid rgba(255,255,255,0.4);border-radius:8px;color:#fff;font-size:.85rem;padding:.55rem;"
+                    data-bs-dismiss="modal">
+                    <i class="bi bi-x-lg me-1"></i>Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+// ── Receipt Preview ───────────────────────────────────────────────
+function showReceiptPreview(receiptNumber, dateIssued, eventName,
+    customerName, contactNumber, dateOfEvent, timeInfo, paymentStatus, printUrl) {
+    document.getElementById('pr_receipt_number').textContent  = receiptNumber;
+    document.getElementById('pr_date_issued').textContent     = dateIssued;
+    document.getElementById('pr_event_name').textContent      = eventName;
+    document.getElementById('pr_customer_name').textContent   = customerName;
+    document.getElementById('pr_contact_number').textContent  = contactNumber;
+    document.getElementById('pr_date_of_event').textContent   = dateOfEvent;
+    document.getElementById('pr_time_info').textContent       = timeInfo;
+    document.getElementById('pr_payment_status').textContent  = paymentStatus;
+    document.getElementById('previewPrintBtn').onclick = function () {
+        window.location.href = printUrl;
+    };
+    new bootstrap.Modal(document.getElementById('receiptPreviewModal')).show();
+}
+
+// ── Export ────────────────────────────────────────────────────────
+function doExport(format) {
+    const dateFrom = document.getElementById('export_date_from').value;
+    const dateTo   = document.getElementById('export_date_to').value;
+
+    if (!dateFrom || !dateTo) {
+        alert('Please select both From and To dates before exporting.');
+        return;
+    }
+    if (dateFrom > dateTo) {
+        alert('The "From" date cannot be later than the "To" date.');
+        return;
+    }
+
+    // Build the export URL and trigger download
+    const url = (format === 'excel')
+        ? `{% url 'export_excel' %}?date_from=${dateFrom}&date_to=${dateTo}`
+        : `{% url 'export_pdf' %}?date_from=${dateFrom}&date_to=${dateTo}`;
+
+    window.location.href = url;
+}
+
+// ── Set default date range to current month ───────────────────────
+document.addEventListener('DOMContentLoaded', function () {
+    const today = new Date();
+    const yyyy  = today.getFullYear();
+    const mm    = String(today.getMonth() + 1).padStart(2, '0');
+    const dd    = String(today.getDate()).padStart(2, '0');
+    const firstDay = `${yyyy}-${mm}-01`;
+    const today_str = `${yyyy}-${mm}-${dd}`;
+
+    const fromInput = document.getElementById('export_date_from');
+    const toInput   = document.getElementById('export_date_to');
+    if (fromInput && !fromInput.value) fromInput.value = firstDay;
+    if (toInput   && !toInput.value)   toInput.value   = today_str;
+});
+
+// Select-all for cancelled bookings checkboxes
+document.addEventListener('DOMContentLoaded', function () {
+    const selectAll = document.getElementById('select_all_cancelled_header');
+    if (!selectAll) return;
+    selectAll.addEventListener('change', function () {
+        document.querySelectorAll('.cancelled-checkbox').forEach(function (cb) {
+            cb.checked = selectAll.checked;
+        });
+    });
+});
+</script>
+{% endblock %}

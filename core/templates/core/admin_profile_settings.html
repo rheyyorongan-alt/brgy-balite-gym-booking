@@ -1,0 +1,502 @@
+{% extends "core/base.html" %}
+
+{% block title %}Admin Profile Settings - Barangay Gym Booking System{% endblock %}
+{% block page_title %}Admin Profile Settings{% endblock %}
+
+{% block extra_css %}
+<style>
+    .settings-container {
+        max-width: 600px;
+        margin: 0 auto;
+    }
+
+    .settings-card {
+        background: #fff;
+        border-radius: 16px;
+        box-shadow: 0 1px 3px rgba(0,0,0,.07);
+        padding: 2rem;
+    }
+
+    .settings-header {
+        margin-bottom: 2rem;
+    }
+
+    .settings-header h2 {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #0f172a;
+        margin-bottom: .5rem;
+    }
+
+    .settings-header p {
+        color: #64748b;
+        font-size: .95rem;
+        margin: 0;
+    }
+
+    .form-section {
+        margin-bottom: 1.5rem;
+    }
+
+    .form-section-title {
+        font-size: .85rem;
+        text-transform: uppercase;
+        letter-spacing: .06em;
+        color: #64748b;
+        font-weight: 600;
+        margin-bottom: .8rem;
+        padding-bottom: .5rem;
+        border-bottom: 1px solid #f1f5f9;
+    }
+
+    .password-input-wrapper {
+        position: relative;
+        margin-bottom: 1rem;
+    }
+
+    .password-toggle-btn {
+        position: absolute;
+        right: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: none;
+        border: none;
+        color: #64748b;
+        cursor: pointer;
+        font-size: 1rem;
+        padding: 0;
+        width: 36px;
+        height: 36px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: color .2s;
+        z-index: 10;
+    }
+
+    .password-toggle-btn:hover {
+        color: #1a56db;
+    }
+
+    .form-control-modern.with-toggle {
+        padding-right: 45px;
+    }
+
+    .password-requirements {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 1rem;
+        margin-top: 1rem;
+        font-size: .85rem;
+    }
+
+    .password-requirements-title {
+        font-weight: 600;
+        color: #0f172a;
+        margin-bottom: .6rem;
+        display: flex;
+        align-items: center;
+        gap: .4rem;
+    }
+
+    .requirement-item {
+        display: flex;
+        align-items: center;
+        gap: .5rem;
+        margin-bottom: .4rem;
+        color: #64748b;
+        font-size: .8rem;
+    }
+
+    .requirement-item:last-child {
+        margin-bottom: 0;
+    }
+
+    .requirement-icon {
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: .7rem;
+        flex-shrink: 0;
+    }
+
+    .requirement-icon.pending {
+        background: #f1f5f9;
+        color: #64748b;
+    }
+
+    .requirement-icon.done {
+        background: #dcfce7;
+        color: #15803d;
+    }
+
+    .form-group {
+        margin-bottom: 1.2rem;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: .5rem;
+        font-size: .9rem;
+        font-weight: 500;
+        color: #0f172a;
+    }
+
+    .form-group .form-text {
+        display: block;
+        font-size: .8rem;
+        color: #64748b;
+        margin-top: .3rem;
+    }
+
+    .form-errors {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .form-errors li {
+        color: #ef4444;
+        font-size: .85rem;
+        margin-bottom: .3rem;
+        padding-left: 1.2rem;
+        position: relative;
+    }
+
+    .form-errors li:before {
+        content: "✗";
+        position: absolute;
+        left: 0;
+        font-weight: 700;
+    }
+
+    .form-group .errorlist {
+        background: #fee2e2;
+        border: 1px solid #fecaca;
+        border-radius: 8px;
+        padding: .6rem .8rem;
+        margin-bottom: .8rem;
+    }
+
+    .btn-group-submit {
+        display: flex;
+        gap: 1rem;
+        margin-top: 2rem;
+    }
+
+    .btn-submit {
+        flex: 1;
+        padding: .7rem 1.2rem;
+        border: none;
+        border-radius: 8px;
+        font-size: .9rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all .2s;
+    }
+
+    .btn-primary-change {
+        background: #1a56db;
+        color: #fff;
+    }
+
+    .btn-primary-change:hover {
+        background: #1e429f;
+        transform: translateY(-1px);
+    }
+
+    .btn-secondary-cancel {
+        background: #f1f5f9;
+        color: #0f172a;
+        border: 1px solid #e2e8f0;
+    }
+
+    .btn-secondary-cancel:hover {
+        background: #e2e8f0;
+    }
+
+    .user-info-section {
+        background: #f8fafc;
+        border-radius: 10px;
+        padding: 1.2rem;
+        margin-bottom: 2rem;
+    }
+
+    .user-info-row {
+        display: flex;
+        justify-content: space-between;
+        padding-bottom: .8rem;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .user-info-row:last-child {
+        border-bottom: none;
+        padding-bottom: 0;
+    }
+
+    .user-info-label {
+        font-size: .85rem;
+        text-transform: uppercase;
+        letter-spacing: .05em;
+        color: #64748b;
+        font-weight: 600;
+    }
+
+    .user-info-value {
+        font-size: .9rem;
+        color: #0f172a;
+        font-weight: 500;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="settings-container">
+    <!-- Settings Card -->
+    <div class="settings-card">
+        <!-- Header -->
+        <div class="settings-header">
+            <h2><i class="bi bi-gear-fill"></i> Profile Settings</h2>
+            <p>Manage your account and change your password</p>
+        </div>
+
+        <!-- User Information -->
+        {% if user_info %}
+        <div class="user-info-section">
+            <div class="user-info-row">
+                <span class="user-info-label">Username</span>
+                <span class="user-info-value">{{ user_info.username }}</span>
+            </div>
+            <div class="user-info-row">
+                <span class="user-info-label">Full Name</span>
+                <span class="user-info-value">{{ user_info.full_name }}</span>
+            </div>
+            {% if user_info.email %}
+            <div class="user-info-row">
+                <span class="user-info-label">Email</span>
+                <span class="user-info-value">{{ user_info.email }}</span>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <!-- Password Change Form -->
+        <form method="post" novalidate>
+            {% csrf_token %}
+
+            <div class="form-section">
+                <div class="form-section-title">Change Password</div>
+
+                <!-- Current Password -->
+                <div class="form-group">
+                    <label for="{{ form.current_password.id_for_label }}">{{ form.current_password.label }}</label>
+                    
+                    {% if form.current_password.errors %}
+                    <div class="errorlist">
+                        {% for error in form.current_password.errors %}
+                        <div style="color: #ef4444; font-size: .85rem; padding: .4rem 0;">
+                            <i class="bi bi-exclamation-circle"></i> {{ error }}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    <div class="password-input-wrapper">
+                        <input type="password" 
+                               id="{{ form.current_password.id_for_label }}" 
+                               name="{{ form.current_password.html_name }}"
+                               class="form-control form-control-modern with-toggle"
+                               placeholder="Enter your current password">
+                        <button type="button" class="password-toggle-btn" data-target="{{ form.current_password.id_for_label }}">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                    </div>
+
+                    {% if form.current_password.help_text %}
+                    <small class="form-text">{{ form.current_password.help_text }}</small>
+                    {% endif %}
+                </div>
+
+                <!-- New Password -->
+                <div class="form-group">
+                    <label for="{{ form.new_password.id_for_label }}">{{ form.new_password.label }}</label>
+                    
+                    {% if form.new_password.errors %}
+                    <div class="errorlist">
+                        {% for error in form.new_password.errors %}
+                        <div style="color: #ef4444; font-size: .85rem; padding: .4rem 0;">
+                            <i class="bi bi-exclamation-circle"></i> {{ error }}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    <div class="password-input-wrapper">
+                        <input type="password" 
+                               id="{{ form.new_password.id_for_label }}" 
+                               name="{{ form.new_password.html_name }}"
+                               class="form-control form-control-modern with-toggle"
+                               placeholder="Enter your new password">
+                        <button type="button" class="password-toggle-btn" data-target="{{ form.new_password.id_for_label }}">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                    </div>
+
+                    <!-- Password Requirements -->
+                    <div class="password-requirements">
+                        <div class="password-requirements-title">
+                            <i class="bi bi-info-circle"></i> Password Requirements
+                        </div>
+                        <div class="requirement-item">
+                            <div class="requirement-icon pending" id="req-length">✓</div>
+                            <span id="req-length-text">At least 8 characters</span>
+                        </div>
+                        <div class="requirement-item">
+                            <div class="requirement-icon pending" id="req-uppercase">✓</div>
+                            <span id="req-uppercase-text">Contains uppercase letter (A-Z)</span>
+                        </div>
+                        <div class="requirement-item">
+                            <div class="requirement-icon pending" id="req-lowercase">✓</div>
+                            <span id="req-lowercase-text">Contains lowercase letter (a-z)</span>
+                        </div>
+                        <div class="requirement-item">
+                            <div class="requirement-icon pending" id="req-number">✓</div>
+                            <span id="req-number-text">Contains number (0-9)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Confirm Password -->
+                <div class="form-group">
+                    <label for="{{ form.confirm_password.id_for_label }}">{{ form.confirm_password.label }}</label>
+                    
+                    {% if form.confirm_password.errors %}
+                    <div class="errorlist">
+                        {% for error in form.confirm_password.errors %}
+                        <div style="color: #ef4444; font-size: .85rem; padding: .4rem 0;">
+                            <i class="bi bi-exclamation-circle"></i> {{ error }}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    <div class="password-input-wrapper">
+                        <input type="password" 
+                               id="{{ form.confirm_password.id_for_label }}" 
+                               name="{{ form.confirm_password.html_name }}"
+                               class="form-control form-control-modern with-toggle"
+                               placeholder="Confirm your new password">
+                        <button type="button" class="password-toggle-btn" data-target="{{ form.confirm_password.id_for_label }}">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                    </div>
+
+                    {% if form.confirm_password.help_text %}
+                    <small class="form-text">{{ form.confirm_password.help_text }}</small>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Form Non-field Errors -->
+            {% if form.non_field_errors %}
+            <div style="background: #fee2e2; border: 1px solid #fecaca; border-radius: 8px; padding: .8rem; margin-bottom: 1.5rem;">
+                {% for error in form.non_field_errors %}
+                <div style="color: #991b1b; font-size: .85rem;">
+                    <i class="bi bi-exclamation-triangle-fill"></i> {{ error }}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <!-- Action Buttons -->
+            <div class="btn-group-submit">
+                <button type="submit" class="btn-submit btn-primary-change">
+                    <i class="bi bi-check-circle"></i> Change Password
+                </button>
+                <a href="{% url 'dashboard' %}" class="btn-submit btn-secondary-cancel" style="text-decoration: none; display: flex; align-items: center; justify-content: center;">
+                    <i class="bi bi-x-circle"></i> Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- JavaScript for Password Visibility Toggle & Requirements Check -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Password visibility toggle
+    document.querySelectorAll('.password-toggle-btn').forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            const targetId = this.getAttribute('data-target');
+            const input = document.getElementById(targetId);
+            const isPassword = input.type === 'password';
+            
+            input.type = isPassword ? 'text' : 'password';
+            this.innerHTML = isPassword ? '<i class="bi bi-eye-slash"></i>' : '<i class="bi bi-eye"></i>';
+        });
+    });
+
+    // Password requirements validation
+    const newPasswordInput = document.getElementById('id_new_password');
+    
+    if (newPasswordInput) {
+        newPasswordInput.addEventListener('input', function() {
+            const password = this.value;
+            
+            // Check length
+            const lengthReq = document.getElementById('req-length');
+            if (password.length >= 8) {
+                lengthReq.classList.remove('pending');
+                lengthReq.classList.add('done');
+                lengthReq.innerHTML = '✓';
+            } else {
+                lengthReq.classList.remove('done');
+                lengthReq.classList.add('pending');
+                lengthReq.innerHTML = '✓';
+            }
+            
+            // Check uppercase
+            const uppercaseReq = document.getElementById('req-uppercase');
+            if (/[A-Z]/.test(password)) {
+                uppercaseReq.classList.remove('pending');
+                uppercaseReq.classList.add('done');
+                uppercaseReq.innerHTML = '✓';
+            } else {
+                uppercaseReq.classList.remove('done');
+                uppercaseReq.classList.add('pending');
+                uppercaseReq.innerHTML = '✓';
+            }
+            
+            // Check lowercase
+            const lowercaseReq = document.getElementById('req-lowercase');
+            if (/[a-z]/.test(password)) {
+                lowercaseReq.classList.remove('pending');
+                lowercaseReq.classList.add('done');
+                lowercaseReq.innerHTML = '✓';
+            } else {
+                lowercaseReq.classList.remove('done');
+                lowercaseReq.classList.add('pending');
+                lowercaseReq.innerHTML = '✓';
+            }
+            
+            // Check number
+            const numberReq = document.getElementById('req-number');
+            if (/[0-9]/.test(password)) {
+                numberReq.classList.remove('pending');
+                numberReq.classList.add('done');
+                numberReq.innerHTML = '✓';
+            } else {
+                numberReq.classList.remove('done');
+                numberReq.classList.add('pending');
+                numberReq.innerHTML = '✓';
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

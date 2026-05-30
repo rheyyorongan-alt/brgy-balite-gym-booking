@@ -1,0 +1,30 @@
+{% extends "core/base.html" %}
+
+{% block title %}Delete Cancelled Booking — Confirm{% endblock %}
+
+{% block content %}
+<div class="card-modern" style="max-width:760px;margin:24px auto;">
+    <div class="card-body">
+        <h4 class="fw-semibold">Delete Cancelled Booking</h4>
+        <p class="text-muted">You're about to permanently delete the cancelled booking below. This action cannot be undone.</p>
+
+        <div class="mt-3 mb-3">
+            <p class="mb-1"><strong>Event:</strong> {{ booking.event_name }}</p>
+            <p class="mb-1"><strong>Customer:</strong> {{ booking.customer_name }}</p>
+            <p class="mb-1"><strong>Receipt #:</strong> {{ booking.receipt_number }}</p>
+            <p class="mb-1"><strong>Date:</strong> {{ booking.date_of_event }} — <strong>Status:</strong> {{ booking.get_status_display }}</p>
+            {% if booking.cancellation_reason %}
+            <p class="mb-1 text-danger"><strong>Reason:</strong> {{ booking.cancellation_reason }}</p>
+            {% endif %}
+        </div>
+
+        <form method="post">
+            {% csrf_token %}
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-danger">Yes, delete booking</button>
+                <a href="{% url 'booking_list' %}" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
