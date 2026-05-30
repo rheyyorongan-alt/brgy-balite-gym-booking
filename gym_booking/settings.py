@@ -14,7 +14,7 @@ SECRET_KEY = config('SECRET_KEY', default='django-insecure-+6#a(nmvmeoc8&!==5qi2
 
 DEBUG = config('DEBUG', default=False, cast=bool)
 
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1').split(',')
+ALLOWED_HOSTS = [host.strip() for host in config('ALLOWED_HOSTS', default='localhost,127.0.0.1').split(',') if host.strip()]
 
 # Only in production
 if not DEBUG:
@@ -25,7 +25,7 @@ if not DEBUG:
     SECURE_CONTENT_SECURITY_POLICY = {
         "default-src": ("'self'",),
     }
-    CSRF_TRUSTED_ORIGINS = config('CSRF_TRUSTED_ORIGINS', default='').split(',')
+    CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in config('CSRF_TRUSTED_ORIGINS', default='').split(',') if origin.strip()]
 else:
     SECURE_SSL_REDIRECT = False
     SESSION_COOKIE_SECURE = False
