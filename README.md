@@ -302,3 +302,5 @@ python3.11 manage.py runserver
 ```
 
 You can now access the admin panel at `http://127.0.0.1:8000/admin/` with the username `admin` and password `admin123`.
+#   b r g y - b a l i t e - g y m - b o o k i n g  
+ 
